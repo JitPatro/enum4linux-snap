@@ -45,6 +45,10 @@ apps:
       PERL5LIB: "$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/perl/:$SNAP/usr/share/perl/5.34/:$SNAP/usr/share/perl/5.34.0/:$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/perl/5.34/:$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/perl/5.34.0/"
       PYTHONPATH: $SNAP/usr/lib/python3/dist-packages
     plugs: [home, network]
+    
+layout:
+  /etc/samba/smb.conf:
+    bind-file: $SNAP/usr/share/samba/smb.conf
 
 parts:
   enum4linux:
@@ -70,3 +74,4 @@ parts:
       cp ./* "$SNAPCRAFT_PART_INSTALL"/usr/share/enum4linux/
       echo -e '#!/usr/bin/env sh \n\nset -e \n\ncd $SNAP/usr/share/enum4linux/ && exec ./enum4linux.pl "$@"' > "$SNAPCRAFT_PART_INSTALL"/bin/enum4linux
       chmod +x "$SNAPCRAFT_PART_INSTALL"/bin/enum4linux
+      sed -i 's#\[global\]#\[global\]\n\nclient min protocol = CORE#g' "$SNAPCRAFT_PART_INSTALL"/usr/share/samba/smb.conf
