@@ -26,8 +26,6 @@ description: |
 
   More info: https://labs.portcullis.co.uk/tools/enum4linux/
 
-icon: enum4linux.png
-
 grade: stable
 confinement: strict
 
@@ -42,35 +40,80 @@ apps:
     environment:
       LANG: C.UTF-8
       LC_ALL: C.UTF-8
+      LD_LIBRARY_PATH: "$SNAP/usr/lib/samba:$LD_LIBRARY_PATH"
       PERL5LIB: "$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/perl/:$SNAP/usr/share/perl/5.34/:$SNAP/usr/share/perl/5.34.0/:$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/perl/5.34/:$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/perl/5.34.0/"
       PYTHONPATH: $SNAP/usr/lib/python3/dist-packages
     plugs: [home, network]
     
-layout:
-  /etc/samba/smb.conf:
-    bind-file: $SNAP/usr/share/samba/smb.conf
-
+    
 parts:
+  samba:
+    plugin: autotools
+    source: https://download.samba.org/pub/samba/samba-latest.tar.gz
+    autotools-configure-parameters:
+      - --enable-fhs
+      - --prefix=/usr
+      - --sysconfdir=/etc
+      - --localstatedir=/var/localstatedir
+      - --with-configdir=/snap/enum4linux/current/etc
+      - --with-piddir=/var/snap/enum4linux/common
+      - --with-lockdir=/var/snap/enum4linux/common
+      - --with-cachedir=/var/snap/enum4linux/common
+      - --with-statedir=/var/snap/enum4linux/current
+      - --with-socketpath=/var/snap/enum4linux/common
+      - --with-privatedir=/var/snap/enum4linux/current
+      - --with-sockets-dir=/var/snap/enum4linux/common
+      - --with-privileged-socket-dir=/var/snap/enum4linux/common
+      - --without-libarchive
+
+    build-packages:
+      - bison
+      - build-essential
+      - libgnutls28-dev
+      - liblmdb-dev
+      - libgpgme-dev
+      - libparse-yapp-perl
+      - libjansson-dev
+      - libacl1-dev
+      - libldap2-dev
+      - libpam0g-dev
+      - libtasn1-bin
+      - libpopt-dev
+      - libfl-dev
+      - libdbus-1-dev
+      - libkrb5-dev
+      - libjson-perl
+      - python3-markdown
+      - python3-dnspython
+      - python3-dev
+      - zlib1g-dev
+      
+    stage-packages:
+      - libjansson4
+
+    override-build: |
+      craftctl default
+      mkdir -p "$CRAFT_PART_INSTALL"/etc; cp ./examples/smb.conf.default "$CRAFT_PART_INSTALL"/etc/smb.conf
+      sed -i 's#\[global\]#\[global\]\n\nclient min protocol = CORE\n\nclient ipc signing = desired#g' "$CRAFT_PART_INSTALL"/etc/smb.conf
+
   enum4linux:
+    after: [samba]
     plugin: nil
     source: https://github.com/CiscoCXSecurity/enum4linux.git
     stage-packages:
-      - samba
-      - smbclient
       - polenum
       - ldap-utils
       - perl
       - dnsutils
 
-    organize:
-      usr/lib/*-linux-gnu/samba/*: usr/lib/
-
-
+# the last two lines fix bugs in enum4linux itself.
     override-build: |
-      snapcraftctl set-version $(git describe --tags)
-      mkdir -p "$SNAPCRAFT_PART_INSTALL"/{bin,usr/share/enum4linux}
+      craftctl set version=$(git describe --tags)
+      mkdir -p "$CRAFT_PART_INSTALL"/usr/share/enum4linux
+      mkdir -p "$CRAFT_PART_INSTALL"/bin
       sed -i "s/Usage: \$0/Usage: enum4linux/g" ./enum4linux.pl
-      cp ./* "$SNAPCRAFT_PART_INSTALL"/usr/share/enum4linux/
-      echo -e '#!/usr/bin/env sh \n\nset -e \n\ncd $SNAP/usr/share/enum4linux/ && exec ./enum4linux.pl "$@"' > "$SNAPCRAFT_PART_INSTALL"/bin/enum4linux
-      chmod +x "$SNAPCRAFT_PART_INSTALL"/bin/enum4linux
-      sed -i 's#\[global\]#\[global\]\n\nclient min protocol = CORE#g' "$SNAPCRAFT_PART_INSTALL"/usr/share/samba/smb.conf
+      cp ./* "$CRAFT_PART_INSTALL"/usr/share/enum4linux/
+      echo -e '#!/usr/bin/env sh \n\nset -e \n\ncd $SNAP/usr/share/enum4linux/ && exec ./enum4linux.pl "$@"' > "$CRAFT_PART_INSTALL"/bin/enum4linux
+      chmod +x "$CRAFT_PART_INSTALL"/bin/enum4linux
+      sed -i 's/\\s+\\.\\.\\s+D.*\\d/\\s+(\\.\\.|.*?)\\s+D.*\\d/g' "$CRAFT_PART_INSTALL"/usr/share/enum4linux/enum4linux.pl
+      sed -i 's|$mapping_result="DENIED"; $listing_result="N/A";|$mapping_result="DENIED"; $listing_result="N/A";\n\t\t} elsif ($output =~ /NT_STATUS_NO_SUCH_FILE listing/) {\n\t\t\t$mapping_result="N/A"; $listing_result="N/A";|g' "$CRAFT_PART_INSTALL"/usr/share/enum4linux/enum4linux.pl
