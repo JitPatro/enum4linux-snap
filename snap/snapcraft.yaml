@@ -106,7 +106,6 @@ parts:
       - perl
       - dnsutils
 
-# the last two lines fix bugs in enum4linux itself.
     override-build: |
       craftctl set version=$(git describe --tags)
       mkdir -p "$CRAFT_PART_INSTALL"/usr/share/enum4linux
@@ -115,5 +114,3 @@ parts:
       cp ./* "$CRAFT_PART_INSTALL"/usr/share/enum4linux/
       echo -e '#!/usr/bin/env sh \n\nset -e \n\ncd $SNAP/usr/share/enum4linux/ && exec ./enum4linux.pl "$@"' > "$CRAFT_PART_INSTALL"/bin/enum4linux
       chmod +x "$CRAFT_PART_INSTALL"/bin/enum4linux
-      sed -i 's/\\s+\\.\\.\\s+D.*\\d/\\s+(\\.\\.|.*?)\\s+D.*\\d/g' "$CRAFT_PART_INSTALL"/usr/share/enum4linux/enum4linux.pl
-      sed -i 's|$mapping_result="DENIED"; $listing_result="N/A";|$mapping_result="DENIED"; $listing_result="N/A";\n\t\t} elsif ($output =~ /NT_STATUS_NO_SUCH_FILE listing/) {\n\t\t\t$mapping_result="N/A"; $listing_result="N/A";|g' "$CRAFT_PART_INSTALL"/usr/share/enum4linux/enum4linux.pl
