@@ -1,6 +1,6 @@
 name: enum4linux
 title: Enum4Linux
-base: core22
+base: core24
 adopt-info: enum4linux
 
 license: GPL-3.0-or-later
@@ -29,10 +29,18 @@ description: |
 grade: stable
 confinement: strict
 
-architectures:
-  - build-on: amd64
-  - build-on: arm64
-  - build-on: armhf
+#architectures:
+  #- build-on: amd64
+  #- build-on: arm64
+  #- build-on: armhf
+
+platforms:
+  amd64:
+    build-on: [amd64]
+  arm64:
+    build-on: [arm64]
+  armhf:
+    build-on: [armhf]
 
 apps:
   enum4linux:
@@ -41,7 +49,7 @@ apps:
       LANG: C.UTF-8
       LC_ALL: C.UTF-8
       LD_LIBRARY_PATH: "$SNAP/usr/lib/samba:$LD_LIBRARY_PATH"
-      PERL5LIB: "$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/perl/:$SNAP/usr/share/perl/5.34/:$SNAP/usr/share/perl/5.34.0/:$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/perl/5.34/:$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/perl/5.34.0/"
+      PERL5LIB: "$SNAP/usr/lib/$CRAFT_ARCH_TRIPLET/perl/:$SNAP/usr/share/perl/5.38/:$SNAP/usr/share/perl/5.38.2/:$SNAP/usr/lib/$CRAFT_ARCH_TRIPLET/perl/5.38/:$SNAP/usr/lib/$CRAFT_ARCH_TRIPLET/perl/5.38.2/"
       PYTHONPATH: $SNAP/usr/lib/python3/dist-packages
     plugs: [home, network]
     
@@ -112,5 +120,5 @@ parts:
       mkdir -p "$CRAFT_PART_INSTALL"/bin
       sed -i "s/Usage: \$0/Usage: enum4linux/g" ./enum4linux.pl
       cp ./* "$CRAFT_PART_INSTALL"/usr/share/enum4linux/
-      echo -e '#!/usr/bin/env sh \n\nset -e \n\ncd $SNAP/usr/share/enum4linux/ && exec ./enum4linux.pl "$@"' > "$CRAFT_PART_INSTALL"/bin/enum4linux
+      echo -e '#!/usr/bin/env sh \n\nset -e \n\ncd $SNAP/usr/share/enum4linux/ && perl ./enum4linux.pl "$@"' > "$CRAFT_PART_INSTALL"/bin/enum4linux
       chmod +x "$CRAFT_PART_INSTALL"/bin/enum4linux
